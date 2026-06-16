@@ -1,0 +1,1 @@
+descobrir qual gpu ta rodando no qsub

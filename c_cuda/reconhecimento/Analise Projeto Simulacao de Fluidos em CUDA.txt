@@ -1,0 +1,64 @@
+Análise do Código CUDA e Dados de Saída
+Trata-se de uma simulação numérica de combustão/chama em meios porosos.
+
+📊 Os Números em output_variables.dat
+O arquivo contém 7 colunas de dados (cada linha = um ponto da malha):
+
+Coluna	Variável	Significado
+1	x	Coordenada horizontal
+2	y	Coordenada vertical
+3	u	Velocidade horizontal (componente X)
+4	v	Velocidade vertical (componente Y)
+5	p	Pressão
+6	t	Temperatura
+7	c	Concentração (fração do combustível)
+Os valores -nan indicam que a simulação ainda não convergiu naquela região (você está vendo um estado intermediário incompleto).
+
+🔥 O Que Este Código CUDA Resolve
+É um solver CFD (Computational Fluid Dynamics) para combustão em meios porosos baseado em:
+
+Características Principais:
+Método de Compressibilidade Artificial (descrito no início de main.cu)
+
+Resolve as equações de Navier-Stokes com um termo de compressibilidade artificial (beta)
+Permite usar esquemas explícitos estáveis
+
+
+Equações Resolvidas:
+
+Momento (U, V): Equação de momento do fluido com discretização QUICK
+Pressão (P): Equação de continuidade via correção de pressão
+Mistura (Z): Fração de mistura (combustível/oxidante)
+Temperatura (T) e Concentração (C): Transportadas separadamente
+
+
+
+
+Método Numérico:
+
+Usa método de Ralston (RK2) - integração de tempo de 2ª ordem
+
+3 passos de Runge-Kutta para cada timestep (veja calc_1, calc_2, calc_3 em cada solver)
+
+Grid não uniforme com refinamento controlado por px_grid e py_grid
+
+
+Física Implementada:
+
+Domínio em meios porosos com porosidade e número de Darcy
+
+Cilindro aquecido (temperatura e concentração inicial)
+
+Combustão com combustível (C₇H₁₆ heptano(hidrocarboneto saturado) ou CH₄ metano(hidrocarboneto))
+
+Estrutura de Solução:
+
+💾 Por Que Foi Transcrito de Fortran?
+
+Fortran → CUDA: Aproveita GPUs para paralelização massiva
+
+Cada kernel CUDA (__global__ functions) processa múltiplos pontos da malha em paralelo
+
+Usa blocos de 16×16 threads para operações 2D
+
+O projeto original era em Fortran (veja referência ao mesh.f90, properties.f90 na pasta). A transcrição para CUDA mantém a mesma lógica numérica mas executa muito mais rápido em GPU.

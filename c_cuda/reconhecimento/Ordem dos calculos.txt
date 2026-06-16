@@ -1,0 +1,10 @@
+1. x_y.cu → xm_ym.cu → vol.cu          [Setup: malha e volumes]
+2. initial.cu                            [Condições iniciais]
+   ↓
+3. Loop de cada timestep:
+   a. res*.cu   → Calcula termos fonte
+   b. solve_*   → Resolve cada variável
+   c. bc*.cu    → Aplica condições de contorno
+   d. max_reduce.cu → Verifica convergência
+   ↓
+4. output.cu                             [Salva resultados]

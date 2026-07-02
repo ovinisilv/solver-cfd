@@ -89,6 +89,9 @@ int main(int argc, char *argv[]){
     cudaMallocManaged((void**)&dev_vm_tau, sizeof(double)*(imax+1)*(jmax+2));
     cudaMallocManaged((void**)&dev_vm_n_tau, sizeof(double)*(imax+1)*(jmax+2));
     
+    cudaError_t err = cudaGetLastError();
+    qsub_log("after cudaMalloc group1: %d (%s)", err, cudaGetErrorString(err));
+    
     double *dev_u, *dev_v, *dev_p, *dev_pn, *dev_h, *dev_t, *dev_z;
     double *dev_c, *dev_t_n_tau, *dev_t_tau, *dev_c_n_tau, *dev_c_tau; 
     cudaMallocManaged((void**)&dev_u, sizeof(double)*(imax+1)*(jmax+1));
@@ -126,6 +129,7 @@ int main(int argc, char *argv[]){
     cudaEventCreate(&ev_solveC_start); cudaEventCreate(&ev_solveC_stop);
     cudaEventCreate(&ev_h2d_start);   cudaEventCreate(&ev_h2d_stop);
     cudaEventCreate(&ev_d2h_start);   cudaEventCreate(&ev_d2h_stop);
+    qsub_log("after cudaEventCreate group: %d (%s)", cudaGetLastError(), cudaGetErrorString(cudaGetLastError()));
 
     float time_solveU, time_solveV, time_solveP, time_solveZ, time_solveC;
     float time_h2d, time_d2h, time_timestep;
@@ -194,6 +198,9 @@ int main(int argc, char *argv[]){
     mesh();
 
     atualiza_tc<<<gridDim, blockDim>>>(dev_t, dev_c, dev_flag, temp_cylinder, concentracao_inicial, c_f, imax, jmax);
+    qsub_log("after atualiza_tc launch: %d (%s)", cudaGetLastError(), cudaGetErrorString(cudaGetLastError()));
+    cudaError_t erra = cudaDeviceSynchronize();
+    qsub_log("after atualiza_tc sync: %d (%s)", erra, cudaGetErrorString(erra));
 
     //--- Set up initial flow field ---
     if(iterations.start_mode == 0){    

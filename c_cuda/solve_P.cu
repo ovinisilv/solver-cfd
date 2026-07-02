@@ -1,9 +1,6 @@
 #include "comum.h"
 
-// Garantindo a declaração explícita do escopo global das matrizes e parâmetros para o NVCC
-extern __managed__ double *dx_c;
-extern __managed__ double *dy_c;
-extern __managed__ double beta;
+extern double beta;
 
 __global__ void col_p(double *dev_um_tau, double *dev_vm_tau, double *dev_p, double *dev_pn, int *dev_flag, double *dev_rc, double *dev_dx, double *dev_dy, int imax, int jmax, double beta_param, double dt_dtau) {
     int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
@@ -34,7 +31,6 @@ void solve_P(double *dev_um_tau, double *dev_vm_tau, double *dev_p, double *dev_
 
     double dt_dtau = dt / (dt + dtau);
 
-    // Passando os vetores globais dx_c e dy_c diretamente como argumentos para evitar problemas de escopo oculto na GPU
-    col_p<<<gridDimPtc, blockDim>>>(dev_um_tau, dev_vm_tau, dev_p, dev_pn, dev_flag, dev_rc, dx_c, dy_c, imax, jmax, beta, dt_dtau);
+    col_p<<<gridDimPtc, blockDim>>>(dev_um_tau, dev_vm_tau, dev_p, dev_pn, dev_flag, dev_rc, dev_dx, dev_dy, imax, jmax, beta, dt_dtau);
     cudaDeviceSynchronize();
 }

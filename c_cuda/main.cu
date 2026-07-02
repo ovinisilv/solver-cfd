@@ -198,7 +198,7 @@ int main(int argc, char const *argv[]){
 
             //--- SOLVE ENERGY (CORRIGIDO: Passando os buffers pseudo-temporais certos) ---
             cudaEventRecord(ev_solveZ_start);
-            solve_T(dev_um_tau, dev_vm_tau, dev_t_tau, dev_t, dev_t_n_tau, dev_z, dev_h, dev_flag, dev_rz);
+            solve_Z(dev_um_tau, dev_vm_tau, dev_t_tau, dev_t, dev_t_n_tau, dev_z, dev_h, dev_flag, dev_rz);
             cudaEventRecord(ev_solveZ_stop);
             cudaEventSynchronize(ev_solveZ_stop);
             cudaEventElapsedTime(&time_solveZ, ev_solveZ_start, ev_solveZ_stop);

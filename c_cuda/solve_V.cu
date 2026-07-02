@@ -16,14 +16,14 @@ __global__ void kernel_V(double *dev_um, double *dev_vm, double *dev_vm_n, doubl
             double v_esquerda = dev_vm_n_tau[(i-1)*(jmax+2)+j];
             double v_direita = dev_vm_n_tau[(i+1)*(jmax+2)+j];
 
-            double dv_dx = (v_direita - v_esquerda) / (2.0 * dx_c[i]);
-            double dv_dy = (v_frente - v_atras) / (2.0 * dy_c[j]);
-            double d2v_dx2 = (v_direita - 2.0*v_atual + v_esquerda) / (dx_c[i]*dx_c[i]);
-            double d2v_dy2 = (v_frente - 2.0*v_atual + v_atras) / (dy_c[j]*dy_c[j]);
+            double dv_dx = (v_direita - v_esquerda) / (2.0 * dev_dx[i]);
+            double dv_dy = (v_frente - v_atras) / (2.0 * dev_dy[j]);
+            double d2v_dx2 = (v_direita - 2.0*v_atual + v_esquerda) / (dev_dx[i]*dev_dx[i]);
+            double d2v_dy2 = (v_frente - 2.0*v_atual + v_atras) / (dev_dy[j]*dev_dy[j]);
 
             double nu = 0.01;
 
-            dev_res_v[idx_v] = -(v_atual * dv_dy) + nu * (d2v_dx2 + d2v_dy2) - (dev_p[idx] - dev_p[i*(jmax+1)+j-1]) / dy_c[j];
+            dev_res_v[idx_v] = -(v_atual * dv_dy) + nu * (d2v_dx2 + d2v_dy2) - (dev_p[idx] - dev_p[i*(jmax+1)+j-1]) / dev_dy[j];
 
             dev_vm_tau[idx_v] = dev_vm_n_tau[idx_v] - dtau_dt * (dev_vm_n_tau[idx_v] - dev_vm_n[idx_v]) + dtau * dev_res_v[idx_v];
         } else {

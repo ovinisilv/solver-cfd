@@ -70,7 +70,7 @@ void output(double *dev_um, double *dev_vm, double *dev_u, double *dev_v, double
 void solve_U(double *dev_um, double *dev_vm, double *dev_um_n, double *dev_um_tau, double *dev_um_n_tau, double *dev_p, double *dev_t, int *dev_flag, double *dev_ru, double *dev_ui, double *dev_res_u);
 void solve_V(double *dev_um, double *dev_vm, double *dev_vm_n, double *dev_vm_tau, double *dev_vm_n_tau, double *dev_p, double *dev_t, int *dev_flag, double *dev_rv, double *dev_vi, double *dev_res_v);
 void solve_P(double *dev_um_tau, double *dev_vm_tau, double *dev_p, double *dev_pn, int *dev_flag, double *dev_rc);
-void solve_T(double *dev_um_tau, double *dev_vm_tau, double *dev_t, double *dev_t_tau, double *dev_t_n_tau, double *dev_z, double *dev_h, int *dev_flag, double *dev_rz);
+void solve_Z(double *dev_um_tau, double *dev_vm_tau, double *dev_t, double *dev_t_tau, double *dev_t_n_tau, double *dev_z, double *dev_h, int *dev_flag, double *dev_rz);
 void solve_C(double *dev_um_tau, double *dev_vm_tau, double *dev_c, double *dev_c_tau, double *dev_c_n_tau, int *dev_flag, double *dev_rc);
 
 #endif

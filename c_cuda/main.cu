@@ -5,7 +5,7 @@
 //"An introduction to computational Fluid Dynamics, The finite volume control, ed." (1995).
 #include "comum.h"
 #include <math.h>
-#define N_IMAX 51*2
+#define N_IMAX (51*2)
 #define N_ITC 800000
 #define idx i*(jmax+1)+j
 

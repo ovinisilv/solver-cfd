@@ -27,7 +27,8 @@ CUDA_INC=""
 if [ -d "/usr/local/cuda/include" ]; then
     CUDA_INC="/usr/local/cuda/include"
 elif [ -n "${CUDA_HOME:-}" ] && [ -d "$CUDA_HOME/include" ]; then
-    CUDA_INC="$CUDA_HOME/include"i
+    CUDA_INC="$CUDA_HOME/include"
+fi
 
 CFLAGS=""
 if [ -n "$CUDA_INC" ] && [ -d "$CUDA_INC" ]; then

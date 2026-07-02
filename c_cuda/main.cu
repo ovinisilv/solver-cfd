@@ -57,7 +57,9 @@ int main(int argc, char *argv[]){
     qsub_log("main start: argc=%d n_imax=%d n_itc=%d", argc, n_imax, n_itc);
     
     calcular(n_imax, n_itc);         // define imax, jmax, dx_c, etc.
+    qsub_log("after calcular: imax=%d jmax=%d", imax, jmax);
     alocar_globais(); 
+    qsub_log("after alocar_globais");
     
     dim3 gridDim((imax + blockDim.x - 1)/blockDim.x, (jmax + blockDim.y - 1)/blockDim.y);
     dim3 gridDimUm((imax+1 + blockDim.x - 1)/blockDim.x, (jmax + blockDim.y - 1)/blockDim.y);
@@ -353,8 +355,11 @@ int main(int argc, char *argv[]){
     !close(550)
     */
     //--- Compute the velocity of mean points ---
+    qsub_log("before comp_mean");
     comp_mean(dev_u, dev_v, dev_um, dev_vm);
-    cudaDeviceSynchronize();
+    qsub_log("after comp_mean");
+    cudaError_t sync_err = cudaDeviceSynchronize();
+    qsub_log("cudaDeviceSynchronize() returned %d (%s)", sync_err, cudaGetErrorString(sync_err));
     
     #ifdef DEBUG
     transient(dev_u, dev_v, dev_p, dev_t, dev_c, itc);

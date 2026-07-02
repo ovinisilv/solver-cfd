@@ -7,9 +7,9 @@ ARCH=sm_86
 OPT="-O2"
 STD="-std=c++11"
 
-gcc -c probe.c -o probe.o
-gcc -c convergence.c -o convergence.o 
-gcc -c flametip.c -o flametip.o
+gcc -c probe.cu -o probe.o
+gcc -c convergence.cu -o convergence.o 
+gcc -c flametip.cu -o flametip.o
 
 $NVCC -arch=$ARCH $OPT $STD -lineinfo \
   xm_ym.cu \

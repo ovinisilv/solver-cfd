@@ -7,42 +7,27 @@ __global__ void kernel_U(double *dev_um, double *dev_vm, double *dev_um_n, doubl
 
     if(i <= imax && j <= jmax){
         if(dev_flag[idx] == c_f){
-            double dtau_dt = dtau / (dt + 1.0e-12);
-            
-            // Proteção contra divisão por zero ou malha mal inicializada
-            double dx = dx_c[i];
-            if(dx < 1.0e-9) dx = 1.0e-3;
+            double dtau_dt = dtau / dt;
 
-            // Limitação de velocidade local para evitar divergência exponencial (CFL Lock)
+            // Coeficientes e diferenciação espacial do escoamento (QUICK / Central)
             double u_atual = dev_um_n_tau[idx];
-            if(isnan(u_atual) || isinf(u_atual)) u_atual = 0.0;
-
             double u_atras = dev_um_n_tau[(i-1)*(jmax+1)+j];
-            if(isnan(u_atras) || isinf(u_atras)) u_atras = 0.0;
-
             double u_frente = dev_um_n_tau[(i+1)*(jmax+1)+j];
-            if(isnan(u_frente) || isinf(u_frente)) u_frente = 0.0;
+            double u_baixo = dev_um_n_tau[i*(jmax+1)+j-1];
+            double u_cima = dev_um_n_tau[i*(jmax+1)+j+1];
 
-            // Cálculo dos termos de transporte com aproximação estável Upwind de primeira ordem 
-            // para garantir a convergência inicial antes do QUICK estabilizar
-            double conveccao = u_atual * (u_atual - u_atras) / dx;
-            double difusao = (u_frente - 2.0*u_atual + u_atras) / (dx * dx);
-            
-            // Resíduo de momentum X
-            double p_atual = dev_p[idx];
-            double p_atras = dev_p[(i-1)*(jmax+1)+j];
-            if(isnan(p_atual)) p_atual = 1.0;
-            if(isnan(p_atras)) p_atras = 1.0;
+            double de_dx = (u_frente - u_atras) / (2.0 * dx_c[i]);
+            double de_dy = (u_cima - u_baixo) / (2.0 * dy_c[j]);
+            double d2u_dx2 = (u_frente - 2.0*u_atual + u_atras) / (dx_c[i]*dx_c[i]);
+            double d2u_dy2 = (u_cima - 2.0*u_atual + u_baixo) / (dy_c[j]*dy_c[j]);
 
-            dev_res_u[idx] = -conveccao + (1.0/100.0)*difusao - (p_atual - p_atras)/dx;
+            // Viscosidade cinemática efetiva aproximada obtida dos parâmetros de referência (Re ~ 100)
+            double nu = 0.01; 
 
-            // Avanço temporal relaxado para amortecer oscilações numéricas de alta frequência
-            double u_proximo = u_atual - (dtau_dt) * (u_atual - dev_um_n[idx]) + dtau * dev_res_u[idx];
-            
-            // Filtro de segurança anti-NaN definitivo
-            if(isnan(u_proximo) || isinf(u_proximo)) u_proximo = 0.0;
-            
-            dev_um_tau[idx] = u_proximo;
+            dev_res_u[idx] = -(u_atual * de_dx) + nu * (d2u_dx2 + d2u_dy2) - (dev_p[idx] - dev_p[(i-1)*(jmax+1)+j]) / dx_c[i];
+
+            // Atualização explícita padrão do passo pseudo-temporal transiente
+            dev_um_tau[idx] = dev_um_n_tau[idx] - dtau_dt * (dev_um_n_tau[idx] - dev_um_n[idx]) + dtau * dev_res_u[idx];
         } else {
             dev_um_tau[idx] = 0.0;
             dev_res_u[idx] = 0.0;

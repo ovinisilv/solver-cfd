@@ -8,36 +8,24 @@ __global__ void kernel_V(double *dev_um, double *dev_vm, double *dev_vm_n, doubl
     if(i <= imax && j <= jmax + 1){
         int idx_v = i*(jmax+2)+j;
         if(dev_flag[idx] == c_f){
-            double dtau_dt = dtau / (dt + 1.0e-12);
-            
-            double dy = dy_c[j];
-            if(dy < 1.0e-9) dy = 1.0e-3;
+            double dtau_dt = dtau / dt;
 
-            // Proteções contra indeterminação matemática local
             double v_atual = dev_vm_n_tau[idx_v];
-            if(isnan(v_atual) || isinf(v_atual)) v_atual = 0.0;
-
             double v_atras = dev_vm_n_tau[idx_v-1];
-            if(isnan(v_atras) || isinf(v_atras)) v_atras = 0.0;
-
             double v_frente = dev_vm_n_tau[idx_v+1];
-            if(isnan(v_frente) || isinf(v_frente)) v_frente = 0.0;
+            double v_esquerda = dev_vm_n_tau[(i-1)*(jmax+2)+j];
+            double v_direita = dev_vm_n_tau[(i+1)*(jmax+2)+j];
 
-            double conveccao = v_atual * (v_atual - v_atras) / dy;
-            double difusao = (v_frente - 2.0*v_atual + v_atras) / (dy * dy);
+            double dv_dx = (v_direita - v_esquerda) / (2.0 * dx_c[i]);
+            double dv_dy = (v_frente - v_atras) / (2.0 * dy_c[j]);
+            double d2v_dx2 = (v_direita - 2.0*v_atual + v_esquerda) / (dx_c[i]*dx_c[i]);
+            double d2v_dy2 = (v_frente - 2.0*v_atual + v_atras) / (dy_c[j]*dy_c[j]);
 
-            double p_atual = dev_p[idx];
-            double p_atras = dev_p[i*(jmax+1)+j-1];
-            if(isnan(p_atual)) p_atual = 1.0;
-            if(isnan(p_atras)) p_atras = 1.0;
+            double nu = 0.01;
 
-            dev_res_v[idx_v] = -conveccao + (1.0/100.0)*difusao - (p_atual - p_atras)/dy;
+            dev_res_v[idx_v] = -(v_atual * dv_dy) + nu * (d2v_dx2 + d2v_dy2) - (dev_p[idx] - dev_p[i*(jmax+1)+j-1]) / dy_c[j];
 
-            double v_proximo = v_atual - (dtau_dt) * (v_atual - dev_vm_n[idx_v]) + dtau * dev_res_v[idx_v];
-            
-            if(isnan(v_proximo) || isinf(v_proximo)) v_proximo = (1.0e-3) * v_i;
-
-            dev_vm_tau[idx_v] = v_proximo;
+            dev_vm_tau[idx_v] = dev_vm_n_tau[idx_v] - dtau_dt * (dev_vm_n_tau[idx_v] - dev_vm_n[idx_v]) + dtau * dev_res_v[idx_v];
         } else {
             dev_vm_tau[idx_v] = (1.0e-3) * v_i;
             dev_res_v[idx_v] = 0.0;

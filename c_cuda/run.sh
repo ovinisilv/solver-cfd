@@ -1,3 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+
 rm -f *.mod  # remove arquivos .mod, sem erro se não existir
 rm -f *.out  # remove arquivos .out
 sh cleaning.sh  # executa script para limpeza extra
@@ -7,9 +10,36 @@ ARCH=sm_86
 OPT="-O2"
 STD="-std=c++11"
 
-gcc -c probe.c -o probe.o
-gcc -c convergence.c -o convergence.o 
-gcc -c flametip.c -o flametip.o
+NVCC_PATH=$(command -v "$NVCC" || true)
+if [ -z "$NVCC_PATH" ]; then
+    echo "ERROR: nvcc not found in PATH" >&2
+    exit 1
+fi
+
+echo "Using nvcc from: $NVCC_PATH"
+
+if [ -z "${CUDA_HOME:-}" ]; then
+    CUDA_HOME="$(dirname "$(dirname "$NVCC_PATH")")"
+    echo "Setting CUDA_HOME from nvcc path: $CUDA_HOME"
+fi
+
+CUDA_INC=""
+if [ -d "/usr/local/cuda/include" ]; then
+    CUDA_INC="/usr/local/cuda/include"
+elif [ -n "${CUDA_HOME:-}" ] && [ -d "$CUDA_HOME/include" ]; then
+    CUDA_INC="$CUDA_HOME/include"i
+
+CFLAGS=""
+if [ -n "$CUDA_INC" ] && [ -d "$CUDA_INC" ]; then
+    echo "Using CUDA include: $CUDA_INC"
+    CFLAGS="-I$CUDA_INC"
+else
+    echo "WARNING: CUDA include path not found; gcc may fail to compile C files" >&2
+fi
+
+gcc $CFLAGS -c probe.c -o probe.o
+gcc $CFLAGS -c convergence.c -o convergence.o
+gcc $CFLAGS -c flametip.c -o flametip.o
 
 $NVCC -arch=$ARCH $OPT $STD -lineinfo \
   xm_ym.cu \
@@ -45,8 +75,6 @@ $NVCC -arch=$ARCH $OPT $STD -lineinfo \
   convergence.o \
   flametip.o \
   -o cylinder_solver.out -lm
-
-
 
 #export OMP_NUM_THREADS=8
 #nohup time ./cylinder_solver.out | tee archivelog.log

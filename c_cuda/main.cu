@@ -33,7 +33,7 @@ int main(int argc, char const *argv[]){
     //--- iterations structured type ---
     Iteracoes iterations;
     iterations.itc_max = N_ITC;
-    iterations.final_time = 0.50; //1.50
+    iterations.final_time = 0.50; 
 
     printf("\n==============================================");
     printf("\n       CFD POROUS MEDIA - CUDA SOLVER        ");
@@ -49,6 +49,7 @@ int main(int argc, char const *argv[]){
     double *dev_rc, *dev_ru, *dev_ui, *dev_res_u, *dev_rv, *dev_vi, *dev_res_v, *dev_rz;
     double *dev_um, *dev_vm, *dev_um_n, *dev_um_tau, *dev_um_n_tau, *dev_vm_n, *dev_vm_tau, *dev_vm_n_tau;
     double *dev_pn, *dev_h, *dev_z, *dev_t_n_tau, *dev_t_tau, *dev_c_n_tau, *dev_c_tau;
+    double *dev_u, *dev_v, *dev_p, *dev_t, *dev_c;
 
     cudaMalloc((void**)&dev_rc, sizeof(double)*(imax+1)*(jmax+1));
     cudaMalloc((void**)&dev_ru, sizeof(double)*(imax+2)*(jmax+1));
@@ -74,6 +75,12 @@ int main(int argc, char const *argv[]){
     cudaMalloc((void**)&dev_t_tau, sizeof(double)*(imax+1)*(jmax+1));
     cudaMalloc((void**)&dev_c_n_tau, sizeof(double)*(imax+1)*(jmax+1));
     cudaMalloc((void**)&dev_c_tau, sizeof(double)*(imax+1)*(jmax+1));
+
+    cudaMallocManaged((void**)&dev_u, sizeof(double)*(imax+1)*(jmax+1));
+    cudaMallocManaged((void**)&dev_v, sizeof(double)*(imax+1)*(jmax+1));
+    cudaMallocManaged((void**)&dev_p, sizeof(double)*(imax+1)*(jmax+1));
+    cudaMallocManaged((void**)&dev_t, sizeof(double)*(imax+1)*(jmax+1));
+    cudaMallocManaged((void**)&dev_c, sizeof(double)*(imax+1)*(jmax+1));
 
     // ================================================================
     // INICIALIZAÇÃO DE BUFFERS CONTRA LIXO DE MEMÓRIA (NaN)
@@ -101,8 +108,6 @@ int main(int argc, char const *argv[]){
     cudaEvent_t ev_solveP_start, ev_solveP_stop;
     cudaEvent_t ev_solveZ_start, ev_solveZ_stop;
     cudaEvent_t ev_solveC_start, ev_solveC_stop;
-    cudaEvent_t ev_h2d_start, ev_h2d_stop;
-    cudaEvent_t ev_d2h_start, ev_d2h_stop;
 
     cudaEventCreate(&ev_ts_start);    cudaEventCreate(&ev_ts_stop);
     cudaEventCreate(&ev_solveU_start); cudaEventCreate(&ev_solveU_stop);
@@ -110,11 +115,9 @@ int main(int argc, char const *argv[]){
     cudaEventCreate(&ev_solveP_start); cudaEventCreate(&ev_solveP_stop);
     cudaEventCreate(&ev_solveZ_start); cudaEventCreate(&ev_solveZ_stop);
     cudaEventCreate(&ev_solveC_start); cudaEventCreate(&ev_solveC_stop);
-    cudaEventCreate(&ev_h2d_start);   cudaEventCreate(&ev_h2d_stop);
-    cudaEventCreate(&ev_d2h_start);   cudaEventCreate(&ev_d2h_stop);
 
-    float time_ts, time_solveU, time_solveV, time_solveP, time_solveZ, time_solveC, time_h2d, time_d2h;
-    float acc_ts=0.0f, acc_solveU=0.0f, acc_solveV=0.0f, acc_solveP=0.0f, acc_solveZ=0.0f, acc_solveC=0.0f, acc_h2d=0.0f, acc_d2h=0.0f;
+    float time_ts, time_solveU, time_solveV, time_solveP, time_solveZ, time_solveC;
+    float acc_ts=0.0f, acc_solveU=0.0f, acc_solveV=0.0f, acc_solveP=0.0f, acc_solveZ=0.0f, acc_solveC=0.0f;
 
     //gerando malha
     mesh();
@@ -139,20 +142,17 @@ int main(int argc, char const *argv[]){
         tempo = tempo + dt;
 
         // =================================================================
-        // CORREÇÃO CRÍTICA: Atualização do Passo de Tempo Físico Anterior (u^n = u)
-        // Sem isso, os buffers contêm lixo e o esquema numérico diverge (NaN)
+        // CORREÇÃO CRÍTICA: Atualização do Passo de Tempo Físico Anterior
         // =================================================================
         atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um, dev_um_n, imax+1, jmax, 1, jmax+1);
         atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm, dev_vm_n, imax, jmax+1, 1, jmax+2);
         
-        // Inicializa o primeiro palpite do pseudo-tempo (tau) com o estado físico atual
         atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um, dev_um_tau, imax+1, jmax, 1, jmax+1);
         atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm, dev_vm_tau, imax, jmax+1, 1, jmax+2);
 
-        // --- CUDA Events: início do timestep ---
         cudaEventRecord(ev_ts_start);
         acc_solveU = 0.0f; acc_solveV = 0.0f; acc_solveP = 0.0f;
-        acc_solveZ = 0.0f; acc_solveC = 0.0f; acc_h2d = 0.0f; acc_d2h = 0.0f;
+        acc_solveZ = 0.0f; acc_solveC = 0.0f;
 
         int itc = 0;
         double erro_max = 1.0;
@@ -161,7 +161,6 @@ int main(int argc, char const *argv[]){
         while(itc < iterations.itc_max){
             itc = itc + 1;
 
-            // Salva o passo anterior do pseudo-tempo (tau) para o cálculo dos resíduos
             atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um_tau, dev_um_n_tau, imax+1, jmax, 1, jmax+1);
             atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm_tau, dev_vm_n_tau, imax, jmax+1, 1, jmax+2);
 
@@ -207,28 +206,23 @@ int main(int argc, char const *argv[]){
             cudaEventElapsedTime(&time_solveC, ev_solveC_start, ev_solveC_stop);
             acc_solveC += time_solveC;
 
-            // Critério de convergência baseado no resíduo máximo detectado na GPU
             erro_max = erro(dev_rc, dev_res_u, dev_res_v);
 
             if(erro_max < 1.0e-5){
                 break;
             }
-        } // Fim do loop de pseudo-tempo
+        } 
 
-        // Atualiza velocidades finais do passo físico
         atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um_tau, dev_um, imax+1, jmax, 1, jmax+1);
         atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm_tau, dev_vm, imax, jmax+1, 1, jmax+2);
 
-        // Sincroniza fronteiras no cilindro se necessário
         atualiza_tc<<<gridDimPtc, blockDim>>>(dev_t, dev_c, dev_flag, temp_cylinder, concentracao_inicial, c_f, imax, jmax);
 
-        // Mapeia velocidades das faces para o centro das células para exportação
         velocidade_centro_celula(dev_um, dev_vm, dev_u, dev_v);
 
         k = k + 1;
         printf("Passo: %d | Tempo Físico: %.4f s | Sub-iterações: %d | Resíduo: %.4e\n", k, tempo, itc, erro_max);
 
-        // Exportação periódica de dados
         if(k % 1 == 0){
             output(dev_um, dev_vm, dev_u, dev_v, dev_p, dev_t, dev_c, k);
         }
@@ -237,21 +231,15 @@ int main(int argc, char const *argv[]){
         cudaEventSynchronize(ev_ts_stop);
         cudaEventElapsedTime(&time_ts, ev_ts_start, ev_ts_stop);
         acc_ts += time_ts;
-    } // Fim do loop de tempo físico
+    } 
 
-    //=================================================================
-    // CUDA Events — Destruição e Cleanup
-    //=================================================================
     cudaEventDestroy(ev_ts_start);    cudaEventDestroy(ev_ts_stop);
     cudaEventDestroy(ev_solveU_start); cudaEventDestroy(ev_solveU_stop);
     cudaEventDestroy(ev_solveV_start); cudaEventDestroy(ev_solveV_stop);
     cudaEventDestroy(ev_solveP_start); cudaEventDestroy(ev_solveP_stop);
     cudaEventDestroy(ev_solveZ_start); cudaEventDestroy(ev_solveZ_stop);
     cudaEventDestroy(ev_solveC_start); cudaEventDestroy(ev_solveC_stop);
-    cudaEventDestroy(ev_h2d_start);   cudaEventDestroy(ev_h2d_stop);
-    cudaEventDestroy(ev_d2h_start);   cudaEventDestroy(ev_d2h_stop);
 
-    // Desalocação de memória local da main
     cudaFree(dev_um);         cudaFree(dev_um_n);
     cudaFree(dev_um_tau);     cudaFree(dev_um_n_tau);
     cudaFree(dev_vm);         cudaFree(dev_vm_n);
@@ -265,8 +253,8 @@ int main(int argc, char const *argv[]){
     cudaFree(dev_z);          cudaFree(dev_t_n_tau);
     cudaFree(dev_t_tau);      cudaFree(dev_c_n_tau);
     cudaFree(dev_c_tau);
+    cudaFree(dev_p);          cudaFree(dev_t);          cudaFree(dev_c);
 
-    // Desalocação das variáveis globais de comum.h
     desalocar_globais();
 
     printf("\nSimulação concluída com sucesso!\n");

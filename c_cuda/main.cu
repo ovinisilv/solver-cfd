@@ -131,7 +131,11 @@ int main(int argc, char const *argv[]){
     dim3 gridDimVm( (imax + blockDim.x - 1) / blockDim.x, (jmax+1 + blockDim.y - 1) / blockDim.y );
     dim3 gridDimPtc( (imax + blockDim.x - 1) / blockDim.x, (jmax + blockDim.y - 1) / blockDim.y );
 
-    //--- LOOP PRINCIPAL DE TEMPO ---
+    //--- FORÇANDO INICIALIZAÇÃO CORRETA DE EMISSÃO DE TEMPO ---
+    dt = 0.005;
+    dtau = 0.05;
+    beta = 1.0;
+
     int k = 0;
     double tempo = 0.0;
 
@@ -141,14 +145,15 @@ int main(int argc, char const *argv[]){
     while(tempo < iterations.final_time){
         tempo = tempo + dt;
 
-        // =================================================================
-        // CORREÇÃO CRÍTICA: Atualização do Passo de Tempo Físico Anterior
-        // =================================================================
+        // Salva o passo físico anterior antes das sub-iterações
         atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um, dev_um_n, imax+1, jmax, 1, jmax+1);
         atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm, dev_vm_n, imax, jmax+1, 1, jmax+2);
         
+        // Inicializa estimativas iniciais do pseudo-tempo (tau)
         atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um, dev_um_tau, imax+1, jmax, 1, jmax+1);
         atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm, dev_vm_tau, imax, jmax+1, 1, jmax+2);
+        atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_t, dev_t_tau, imax, jmax, 1, jmax+1);
+        atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_c, dev_c_tau, imax, jmax, 1, jmax+1);
 
         cudaEventRecord(ev_ts_start);
         acc_solveU = 0.0f; acc_solveV = 0.0f; acc_solveP = 0.0f;
@@ -161,8 +166,11 @@ int main(int argc, char const *argv[]){
         while(itc < iterations.itc_max){
             itc = itc + 1;
 
+            // Sincroniza passo n_tau anterior do pseudo-tempo para cálculo correto do resíduo temporal
             atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um_tau, dev_um_n_tau, imax+1, jmax, 1, jmax+1);
             atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm_tau, dev_vm_n_tau, imax, jmax+1, 1, jmax+2);
+            atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_t_tau, dev_t_n_tau, imax, jmax, 1, jmax+1);
+            atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_c_tau, dev_c_n_tau, imax, jmax, 1, jmax+1);
 
             //--- SOLVE MOMENTUM X ---
             cudaEventRecord(ev_solveU_start);
@@ -188,19 +196,17 @@ int main(int argc, char const *argv[]){
             cudaEventElapsedTime(&time_solveP, ev_solveP_start, ev_solveP_stop);
             acc_solveP += time_solveP;
 
-            //--- SOLVE ENERGY ---
+            //--- SOLVE ENERGY (CORRIGIDO: Passando os buffers pseudo-temporais certos) ---
             cudaEventRecord(ev_solveZ_start);
-            atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_t, dev_t_n_tau, imax, jmax, 1, jmax+1);
-            solve_T(dev_um_tau, dev_vm_tau, dev_t, dev_t_tau, dev_t_n_tau, dev_z, dev_h, dev_flag, dev_rz);
+            solve_T(dev_um_tau, dev_vm_tau, dev_t_tau, dev_t, dev_t_n_tau, dev_z, dev_h, dev_flag, dev_rz);
             cudaEventRecord(ev_solveZ_stop);
             cudaEventSynchronize(ev_solveZ_stop);
             cudaEventElapsedTime(&time_solveZ, ev_solveZ_start, ev_solveZ_stop);
             acc_solveZ += time_solveZ;
 
-            //--- SOLVE SPECIES ---
+            //--- SOLVE SPECIES (CORRIGIDO) ---
             cudaEventRecord(ev_solveC_start);
-            atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_c, dev_c_n_tau, imax, jmax, 1, jmax+1);
-            solve_C(dev_um_tau, dev_vm_tau, dev_c, dev_c_tau, dev_c_n_tau, dev_flag, dev_rz);
+            solve_C(dev_um_tau, dev_vm_tau, dev_c_tau, dev_c, dev_c_n_tau, dev_flag, dev_rc);
             cudaEventRecord(ev_solveC_stop);
             cudaEventSynchronize(ev_solveC_stop);
             cudaEventElapsedTime(&time_solveC, ev_solveC_start, ev_solveC_stop);
@@ -213,8 +219,11 @@ int main(int argc, char const *argv[]){
             }
         } 
 
+        // Atualiza os arrays principais com o resultado convergido da sub-iteração
         atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um_tau, dev_um, imax+1, jmax, 1, jmax+1);
         atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm_tau, dev_vm, imax, jmax+1, 1, jmax+2);
+        atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_t_tau, dev_t, imax, jmax, 1, jmax+1);
+        atualizar_matrizes_linearizadas<<<gridDimPtc, blockDim>>>(dev_c_tau, dev_c, imax, jmax, 1, jmax+1);
 
         atualiza_tc<<<gridDimPtc, blockDim>>>(dev_t, dev_c, dev_flag, temp_cylinder, concentracao_inicial, c_f, imax, jmax);
 

@@ -16,19 +16,3 @@ void comp_mean(double *dev_u, double *dev_v, double *dev_um, double *dev_vm){
     
     pontos_medios<<<gridDim, blockDim>>>(dev_u, dev_v, dev_um, dev_vm, imax, jmax);
 }
-
-void velocidade_centro_celula(double *dev_um, double *dev_vm, double *dev_u, double *dev_v){
-    comp_mean(dev_u, dev_v, dev_um, dev_vm);
-}
-
-double erro(double *dev_rc, double *dev_res_u, double *dev_res_v){
-    double h_rc = 0.0;
-    double h_ru = 0.0;
-    double h_rv = 0.0;
-
-    cudaMemcpy(&h_rc, dev_rc, sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&h_ru, dev_res_u, sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&h_rv, dev_res_v, sizeof(double), cudaMemcpyDeviceToHost);
-
-    return fmax(fabs(h_rc), fmax(fabs(h_ru), fabs(h_rv)));
-}

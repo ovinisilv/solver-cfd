@@ -9,12 +9,12 @@
 #include <cuda.h>
 #include <device_launch_parameters.h>
 
-typedef struct Iterations{
+struct Iterations{
     int itc_max, nc, n_tr, n_out, n_vort;
     double beta, b_art, dtau_f, final_time, eps, eps_mass;
     int start_mode;
-} Iteracoes;
-extern Iteracoes iterations;
+};
+extern struct Iterations iterations;
 
 struct Ref{
     double tnu, yf_b, yo_oo, ts, tn_too;
@@ -23,7 +23,6 @@ extern struct Ref ref;
 
 extern int restart_mode;
 extern double dtau, dt, tempo;
-extern double beta;
 extern double porosidade, darcy_number, cf, temp_cylinder, concentracao_inicial;
 extern double px_grid, py_grid, q_grid, lhori, y_up, y_down, hvert;
 extern int imax, jmax;    
@@ -48,8 +47,4 @@ dim3 grid_2d(int imax, int jmax);
 void calcular(int n_imax, int n_itc);
 void alocar_globais();
 void desalocar_globais();
-void input_parameters();
-void IC(double *dev_um, double *dev_vm, double *dev_p, double *dev_t, double *dev_c, double *dev_pn);
-void velocidade_centro_celula(double *dev_um, double *dev_vm, double *dev_u, double *dev_v);
-double erro(double *dev_rc, double *dev_res_u, double *dev_res_v);
 #endif

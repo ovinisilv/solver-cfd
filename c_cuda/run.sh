@@ -7,9 +7,9 @@ ARCH=sm_86
 OPT="-O2"
 STD="-std=c++11"
 
-nvcc -c probe.cu -o probe.o
-nvcc -c convergence.cu -o convergence.o 
-nvcc -c flametip.cu -o flametip.o
+gcc -c probe.c -o probe.o
+gcc -c convergence.c -o convergence.o 
+gcc -c flametip.c -o flametip.o
 
 $NVCC -arch=$ARCH $OPT $STD -lineinfo \
   xm_ym.cu \
@@ -22,7 +22,7 @@ $NVCC -arch=$ARCH $OPT $STD -lineinfo \
   solve_Z.cu \
   upwind_U_pair.cu \
   upwind_V_pair.cu \
-  transient.cu \
+  transient.c \
   resz.cu \
   resv.cu \
   resu.cu \

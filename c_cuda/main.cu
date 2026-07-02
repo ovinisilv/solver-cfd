@@ -340,6 +340,7 @@ int main(int argc, char *argv[]){
     */
     //--- Compute the velocity of mean points ---
     comp_mean(dev_u, dev_v, dev_um, dev_vm);
+    cudaDeviceSynchronize();
     
     #ifdef DEBUG
     transient(dev_u, dev_v, dev_p, dev_t, dev_c, itc);

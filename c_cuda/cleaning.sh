@@ -14,8 +14,8 @@ rm -rfv data/results/U/*.dat
 #apaga graficos gerados pelo pos_graphics
 rm -rfv output/*.png
 
-#apaga dados gerados pelo pos_process.f90
-rm -rfv data/*.dat
+#apaga dados gerados pelo pos_process.f90, preservando output_variables.dat
+find data -maxdepth 1 -type f -name '*.dat' ! -name 'output_variables.dat' -print -delete
 rm -rfv data/error.dat
 rm -rfv data/flametip.dat
 rm -rfv data/probe.dat

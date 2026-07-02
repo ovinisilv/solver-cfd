@@ -23,6 +23,7 @@ int restart_mode;      //tipo de start, se eh CI ou solucao anterior
 
 // Passo de tempo
 double dtau, dt, tempo;
+double beta = 1.0;
 
 // Parâmetros físicos e geométricos
 double porosidade = 0.5;                               //Lido em main, mesh, nonsymetric_mesh

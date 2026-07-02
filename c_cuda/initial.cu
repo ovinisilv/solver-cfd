@@ -93,6 +93,14 @@ void init(){
 
 }
 
+void input_parameters(){
+    init();
+    if(iterations.itc_max <= 0){
+        iterations.itc_max = 800000;
+    }
+    calcular(102, iterations.itc_max);
+}
+
 void IC(double *dev_um, double *dev_vm, double *dev_p, double *dev_t, double *dev_c, double *dev_pn){
     dim3 blockDim(16,16);
     dim3 gridDimUm((imax+1 + blockDim.x - 1)/blockDim.x, (jmax + blockDim.y - 1)/blockDim.y);

@@ -31,7 +31,6 @@ __global__ void atualiza_tc(double *dev_t, double *dev_c, int *dev_flag, double 
 
 int main(int argc, char const *argv[]){
     //--- iterations structured type ---
-    Iteracoes iterations;
     iterations.itc_max = N_ITC;
     iterations.final_time = 0.50; 
 
@@ -123,7 +122,7 @@ int main(int argc, char const *argv[]){
     mesh();
 
     //condicoes iniciais
-    IC(dev_um, dev_vm, dev_u, dev_v, dev_p, dev_t, dev_c, dev_flag);
+    IC(dev_um, dev_vm, dev_p, dev_t, dev_c, dev_pn);
 
     //--- Execution configuration ---
     dim3 blockDim(16, 16);
@@ -198,7 +197,7 @@ int main(int argc, char const *argv[]){
 
             //--- SOLVE ENERGY (CORRIGIDO: Passando os buffers pseudo-temporais certos) ---
             cudaEventRecord(ev_solveZ_start);
-            solve_Z(dev_um_tau, dev_vm_tau, dev_t_tau, dev_t, dev_t_n_tau, dev_z, dev_h, dev_flag, dev_rz);
+            solve_Z(dev_um_tau, dev_vm_tau, dev_t_tau, dev_t_n_tau, dev_t_tau, dev_rz);
             cudaEventRecord(ev_solveZ_stop);
             cudaEventSynchronize(ev_solveZ_stop);
             cudaEventElapsedTime(&time_solveZ, ev_solveZ_start, ev_solveZ_stop);
@@ -206,7 +205,7 @@ int main(int argc, char const *argv[]){
 
             //--- SOLVE SPECIES (CORRIGIDO) ---
             cudaEventRecord(ev_solveC_start);
-            solve_C(dev_um_tau, dev_vm_tau, dev_c_tau, dev_c, dev_c_n_tau, dev_flag, dev_rc);
+            solve_C(dev_um_tau, dev_vm_tau, dev_c, dev_c_n_tau, dev_c_tau, dev_rc);
             cudaEventRecord(ev_solveC_stop);
             cudaEventSynchronize(ev_solveC_stop);
             cudaEventElapsedTime(&time_solveC, ev_solveC_start, ev_solveC_stop);

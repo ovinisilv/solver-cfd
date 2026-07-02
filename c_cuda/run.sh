@@ -25,13 +25,26 @@ fi
 echo "Using nvcc from: $NVCC_PATH"
 echo "Using CUDA_HOME: $CUDA_HOME"
 
+target_include_candidates=(
+    "/usr/local/cuda/include"
+    "$CUDA_HOME/include"
+    "$NVCC_BINDIR/../include"
+    "$NVCC_BINDIR/../targets/x86_64-linux/include"
+)
+
 CUDA_INC=""
-if [ -d "/usr/local/cuda/include" ]; then
-    CUDA_INC="/usr/local/cuda/include"
-elif [ -n "${CUDA_HOME:-}" ] && [ -d "$CUDA_HOME/include" ]; then
-    CUDA_INC="$CUDA_HOME/include"
-elif [ -d "$NVCC_BINDIR/../include" ]; then
-    CUDA_INC="$NVCC_BINDIR/../include"
+for candidate in "${target_include_candidates[@]}"; do
+    if [ -n "$candidate" ] && [ -d "$candidate" ] && [ -f "$candidate/cuda_runtime.h" ]; then
+        CUDA_INC="$candidate"
+        break
+    fi
+done
+
+if [ -z "$CUDA_INC" ] && [ -n "${CUDA_HOME:-}" ]; then
+    found_runtime=$(find "$CUDA_HOME" -name cuda_runtime.h 2>/dev/null | head -n 1 || true)
+    if [ -n "$found_runtime" ]; then
+        CUDA_INC="$(dirname "$found_runtime")"
+    fi
 fi
 
 CFLAGS=""

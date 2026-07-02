@@ -6,5 +6,6 @@
 #$ -o saida_job.txt
 #$ -e erro_job.txt
 
-./run.sh
-./executar.sh
+# Usando o bash explicitamente ignora travas de permissão do arquivo
+bash run.sh
+bash executar.sh

@@ -5,9 +5,22 @@
 //"An introduction to computational Fluid Dynamics, The finite volume control, ed." (1995).
 #include "comum.h"
 #include <math.h>
+#include <stdarg.h>
 #define N_IMAX (51*2)
 #define N_ITC 800000
 #define idx i*(jmax+1)+j
+
+static void qsub_log(const char *fmt, ...){
+    FILE *f = fopen("output_main.txt", "a");
+    if(!f) return;
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(f, fmt, args);
+    va_end(args);
+    fprintf(f, "\n");
+    fflush(f);
+    fclose(f);
+}
 
 __global__ void atualizar_matrizes_linearizadas(double *origem, double *destino, int tamanhoLinha, int tamanhoColuna, int inicio, int coluna){
     int i = blockIdx.x * blockDim.x + threadIdx.x + inicio;
@@ -41,6 +54,7 @@ int main(int argc, char *argv[]){
         n_imax = atoi(argv[1]);
         n_itc = atoi(argv[2]);
     }
+    qsub_log("main start: argc=%d n_imax=%d n_itc=%d", argc, n_imax, n_itc);
     
     calcular(n_imax, n_itc);         // define imax, jmax, dx_c, etc.
     alocar_globais(); 
@@ -347,7 +361,9 @@ int main(int argc, char *argv[]){
     #endif
     
     //--- output data file ---
+    qsub_log("calling output() after comp_mean");
     output(dev_um, dev_vm, dev_u, dev_v, dev_p, dev_t, dev_c, itc);
+    qsub_log("returned from output()");
 
     /*duration = omp_get_wtime() - duration;
     printf("post %lf\n", duration);

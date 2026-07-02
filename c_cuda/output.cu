@@ -19,8 +19,7 @@ static void ensure_directory(const char *path){
 }
 
 static FILE *open_log_file(void){
-    ensure_directory("data");
-    FILE *log = fopen("data/output_log.txt", "a");
+    FILE *log = fopen("output_log.txt", "a");
     return log;
 }
 
@@ -54,7 +53,6 @@ void output(double *dev_um, double *dev_vm, double *dev_u, double *dev_v, double
         log_message("output() cwd=UNKNOWN");
     }
     log_message("output() called with imax=%d jmax=%d", imax, jmax);
-    FILE *arquivo;
     
     ensure_directory("data");
     ensure_directory("data/restart");

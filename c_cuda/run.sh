@@ -26,32 +26,37 @@ echo "Using nvcc from: $NVCC_PATH"
 echo "Using CUDA_HOME: $CUDA_HOME"
 
 target_include_candidates=(
-    "/usr/local/cuda/include"
-    "$CUDA_HOME/include"
     "$CUDA_HOME/cuda/12.4/targets/x86_64-linux/include"
-    "$NVCC_BINDIR/../include"
     "$NVCC_BINDIR/../targets/x86_64-linux/include"
+    "$CUDA_HOME/include"
+    "$NVCC_BINDIR/../include"
+    "/usr/local/cuda/include"
 )
 
 CUDA_INC=""
 for candidate in "${target_include_candidates[@]}"; do
+    echo "checking candidate include: $candidate"
     if [ -n "$candidate" ] && [ -d "$candidate" ] && [ -f "$candidate/cuda_runtime.h" ]; then
         CUDA_INC="$candidate"
         break
     fi
 done
 
-if [ -z "$CUDA_INC" ] && [ -n "${CUDA_HOME:-}" ]; then
-    found_runtime=$(find "$CUDA_HOME" -path '*/cuda_runtime.h' 2>/dev/null | head -n 1 || true)
+if [ -z "$CUDA_INC" ]; then
+    echo "searching for cuda_runtime.h under CUDA_HOME and NVCC parent"
+    found_runtime=$(find "$CUDA_HOME" "$NVCC_BINDIR/../.." -path '*/cuda_runtime.h' 2>/dev/null | head -n 1 || true)
     if [ -n "$found_runtime" ]; then
         CUDA_INC="$(dirname "$found_runtime")"
+        echo "Found cuda_runtime.h at: $found_runtime"
     fi
 fi
 
-if [ -z "$CUDA_INC" ] && [ -d "$NVCC_BINDIR/../.." ]; then
-    found_runtime=$(find "$NVCC_BINDIR/../.." -path '*/cuda_runtime.h' 2>/dev/null | head -n 1 || true)
+if [ -z "$CUDA_INC" ]; then
+    echo "searching /share/apps for cuda_runtime.h"
+    found_runtime=$(find /share/apps -path '*/cuda_runtime.h' 2>/dev/null | head -n 1 || true)
     if [ -n "$found_runtime" ]; then
         CUDA_INC="$(dirname "$found_runtime")"
+        echo "Found cuda_runtime.h under /share/apps at: $found_runtime"
     fi
 fi
 

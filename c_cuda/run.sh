@@ -16,18 +16,22 @@ if [ -z "$NVCC_PATH" ]; then
     exit 1
 fi
 
-echo "Using nvcc from: $NVCC_PATH"
-
+NVCC_BINDIR="$(dirname "$NVCC_PATH")"
 if [ -z "${CUDA_HOME:-}" ]; then
-    CUDA_HOME="$(dirname "$(dirname "$NVCC_PATH")")"
+    CUDA_HOME="$(dirname "$NVCC_BINDIR")"
     echo "Setting CUDA_HOME from nvcc path: $CUDA_HOME"
 fi
+
+echo "Using nvcc from: $NVCC_PATH"
+echo "Using CUDA_HOME: $CUDA_HOME"
 
 CUDA_INC=""
 if [ -d "/usr/local/cuda/include" ]; then
     CUDA_INC="/usr/local/cuda/include"
 elif [ -n "${CUDA_HOME:-}" ] && [ -d "$CUDA_HOME/include" ]; then
     CUDA_INC="$CUDA_HOME/include"
+elif [ -d "$NVCC_BINDIR/../include" ]; then
+    CUDA_INC="$NVCC_BINDIR/../include"
 fi
 
 CFLAGS=""

@@ -1,4 +1,5 @@
 ######### rotina para limpar o código #########
+set +e
 
 #apaga parte transiente
 rm -rfv transient/data/*.dat 
@@ -21,5 +22,8 @@ rm -rfv data/flametip.dat
 rm -rfv data/probe.dat
 rm -rfv data/probe_point.dat
 rm -rfv data/*.vtk
-rm *.log
-rm *.gif
+shopt -s nullglob
+for f in *.log *.gif; do
+    rm -vf "$f"
+done
+shopt -u nullglob

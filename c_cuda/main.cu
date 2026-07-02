@@ -342,6 +342,7 @@ int main(int argc, char *argv[]){
 
         tr = tr + 1;
     }
+    qsub_log("after physical time loop: tr=%d tempo=%f itc=%d error=%f", tr, tempo, itc, error);
     //--- End of physical calculation ---
 
     /*duration = omp_get_wtime() - duration;

@@ -178,7 +178,7 @@ int main(int argc, char *argv[]){
     mesh();
 
     atualiza_tc<<<gridDim, blockDim>>>(dev_t, dev_c, dev_flag, temp_cylinder, concentracao_inicial, c_f, imax, jmax);
-    cudaDeviceSynchronize(); // ADICIONADO1
+    //cudaDeviceSynchronize(); // ADICIONADO1
 
     //--- Set up initial flow field ---
     if(iterations.start_mode == 0){    
@@ -189,7 +189,7 @@ int main(int argc, char *argv[]){
         restart_dom(dev_um, dev_vm, dev_p, dev_t, dev_z, dev_h);
     }
 
-    cudaDeviceSynchronize(); // ADICIONADO2
+    //cudaDeviceSynchronize(); // ADICIONADO2
 
     //--- Pseudo time step ---
     dtau = 5.e-2;
@@ -197,7 +197,7 @@ int main(int argc, char *argv[]){
 
     atualizar_matrizes_linearizadas<<<gridDimUm, blockDim>>>(dev_um, dev_um_tau, imax+1, jmax, 1, jmax+1);
     atualizar_matrizes_linearizadas<<<gridDimVm, blockDim>>>(dev_vm, dev_vm_tau, imax, jmax+1, 1, jmax+2);
-    cudaDeviceSynchronize(); // ADICIONADO3
+    //cudaDeviceSynchronize(); // ADICIONADO3
 
     /*duration = omp_get_wtime() - duration;
     printf("init %lf/n", duration);
@@ -343,9 +343,9 @@ int main(int argc, char *argv[]){
     !close(550)
     */
     //--- Compute the velocity of mean points ---
-    cudaDeviceSynchronize(); // ADICIONADO4
+    //cudaDeviceSynchronize(); // ADICIONADO4
     comp_mean(dev_u, dev_v, dev_um, dev_vm);
-    cudaDeviceSynchronize(); // ADICIONADO5
+    //cudaDeviceSynchronize(); // ADICIONADO5
     
     #ifdef DEBUG
     transient(dev_u, dev_v, dev_p, dev_t, dev_c, itc);

@@ -15,8 +15,9 @@ __global__ void calc_1(double *dev_dudx, double *dev_dvdy, double *dev_rp, doubl
 
 __global__ void calc_2(double *dev_pi, double *dev_p, double *dev_rp, int jmax, int imax, double dtau, double beta){
     int i = blockIdx.x * blockDim.x + threadIdx.x + 2;
-    //BACKUP CORREÇÃO1: int j = blockIdx.y * blockDim.y + threadIdx.y + 3;
-    int j = blockIdx.y * blockDim.y + threadIdx.y + 2;
+    //BACKUP CORREÇÃO1: 
+    int j = blockIdx.y * blockDim.y + threadIdx.y + 3;
+    //SUGESTAO GEMINI: int j = blockIdx.y * blockDim.y + threadIdx.y + 2;
 	if(i <= imax-1 && j <= jmax-1){
         dev_pi[idx] = (double)(3.0/4.0) * dev_p[idx] + (double)(1.0/4.0) * (dev_pi[idx] + dtau * dev_rp[idx] * beta);
     }

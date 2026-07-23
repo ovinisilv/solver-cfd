@@ -162,8 +162,11 @@ void alocar_globais(){
     cudaMallocManaged((void**)&dev_zi, sizeof(double)*(imax+1)*(jmax+1));
     cudaMallocManaged((void**)&dev_flag, sizeof(int)*(imax+1)*(jmax+1));
 
-//BACKUP CORREÇÃO2: cudaMallocManaged((void**)&dev_ci, sizeof(double*)*(imax+1)*(jmax+1));
-    cudaMallocManaged((void**)&dev_ci, sizeof(double)*(imax+1)*(jmax+1));
+//BACKUP CORREÇÃO2: 
+    cudaMallocManaged((void**)&dev_ci, sizeof(double*)*(imax+1)*(jmax+1));
+    
+    
+    //SUGESTAO GEMINI: cudaMallocManaged((void**)&dev_ci, sizeof(double)*(imax+1)*(jmax+1));
 
 ////////////////////////////////////////////////////////
 

@@ -12,6 +12,3 @@ void probe(double **v, int itc){
     fprintf(arquivo, "%d %lf\n", itc, st_pos-0.5);
     fclose(arquivo);
 }
-
-
-

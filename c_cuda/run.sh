@@ -1,6 +1,3 @@
-#!/bin/bash
-set -euo pipefail
-
 rm -f *.mod  # remove arquivos .mod, sem erro se não existir
 rm -f *.out  # remove arquivos .out
 sh cleaning.sh  # executa script para limpeza extra
@@ -10,67 +7,9 @@ ARCH=sm_86
 OPT="-O2"
 STD="-std=c++11"
 
-NVCC_PATH=$(command -v "$NVCC" || true)
-if [ -z "$NVCC_PATH" ]; then
-    echo "ERROR: nvcc not found in PATH" >&2
-    exit 1
-fi
-
-NVCC_BINDIR="$(dirname "$NVCC_PATH")"
-if [ -z "${CUDA_HOME:-}" ]; then
-    CUDA_HOME="$(dirname "$(dirname "$NVCC_BINDIR")")"
-    echo "Setting CUDA_HOME from nvcc path: $CUDA_HOME"
-fi
-
-echo "Using nvcc from: $NVCC_PATH"
-echo "Using CUDA_HOME: $CUDA_HOME"
-
-target_include_candidates=(
-    "$CUDA_HOME/cuda/12.4/targets/x86_64-linux/include"
-    "$NVCC_BINDIR/../targets/x86_64-linux/include"
-    "$CUDA_HOME/include"
-    "$NVCC_BINDIR/../include"
-    "/usr/local/cuda/include"
-)
-
-CUDA_INC=""
-for candidate in "${target_include_candidates[@]}"; do
-    echo "checking candidate include: $candidate"
-    if [ -n "$candidate" ] && [ -d "$candidate" ] && [ -f "$candidate/cuda_runtime.h" ]; then
-        CUDA_INC="$candidate"
-        break
-    fi
-done
-
-if [ -z "$CUDA_INC" ]; then
-    echo "searching for cuda_runtime.h under CUDA_HOME and NVCC parent"
-    found_runtime=$(find "$CUDA_HOME" "$NVCC_BINDIR/../.." -path '*/cuda_runtime.h' 2>/dev/null | head -n 1 || true)
-    if [ -n "$found_runtime" ]; then
-        CUDA_INC="$(dirname "$found_runtime")"
-        echo "Found cuda_runtime.h at: $found_runtime"
-    fi
-fi
-
-if [ -z "$CUDA_INC" ]; then
-    echo "searching /share/apps for cuda_runtime.h"
-    found_runtime=$(find /share/apps -path '*/cuda_runtime.h' 2>/dev/null | head -n 1 || true)
-    if [ -n "$found_runtime" ]; then
-        CUDA_INC="$(dirname "$found_runtime")"
-        echo "Found cuda_runtime.h under /share/apps at: $found_runtime"
-    fi
-fi
-
-CFLAGS=""
-if [ -n "$CUDA_INC" ] && [ -d "$CUDA_INC" ]; then
-    echo "Using CUDA include: $CUDA_INC"
-    CFLAGS="-I$CUDA_INC"
-else
-    echo "WARNING: CUDA include path not found; gcc may fail to compile C files" >&2
-fi
-
-gcc $CFLAGS -c probe.c -o probe.o
-gcc $CFLAGS -c convergence.c -o convergence.o
-gcc $CFLAGS -c flametip.c -o flametip.o
+gcc -c probe.c -o probe.o
+gcc -c convergence.c -o convergence.o 
+gcc -c flametip.c -o flametip.o
 
 $NVCC -arch=$ARCH $OPT $STD -lineinfo \
   xm_ym.cu \
@@ -106,6 +45,8 @@ $NVCC -arch=$ARCH $OPT $STD -lineinfo \
   convergence.o \
   flametip.o \
   -o cylinder_solver.out -lm
+
+
 
 #export OMP_NUM_THREADS=8
 #nohup time ./cylinder_solver.out | tee archivelog.log

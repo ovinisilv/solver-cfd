@@ -17,8 +17,6 @@ __global__ void calc_resu(
 	double u_ww, u_ee, u_ss, u_nn;
 	double dudxdx, dxdvdy;
 	double artdivu, q_art;
-
-	
 	
 	double epsilon_idx = dev_epsilon1[idx];
 	double aux = epsilon_idx/re;

@@ -5,22 +5,9 @@
 //"An introduction to computational Fluid Dynamics, The finite volume control, ed." (1995).
 #include "comum.h"
 #include <math.h>
-#include <stdarg.h>
-#define N_IMAX (51*3)
+#define N_IMAX 51*4
 #define N_ITC 800000
 #define idx i*(jmax+1)+j
-
-static void qsub_log(const char *fmt, ...){
-    FILE *f = fopen("output_main.txt", "a");
-    if(!f) return;
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(f, fmt, args);
-    va_end(args);
-    fprintf(f, "\n");
-    fflush(f);
-    fclose(f);
-}
 
 __global__ void atualizar_matrizes_linearizadas(double *origem, double *destino, int tamanhoLinha, int tamanhoColuna, int inicio, int coluna){
     int i = blockIdx.x * blockDim.x + threadIdx.x + inicio;
@@ -54,12 +41,9 @@ int main(int argc, char *argv[]){
         n_imax = atoi(argv[1]);
         n_itc = atoi(argv[2]);
     }
-    qsub_log("main start: argc=%d n_imax=%d n_itc=%d", argc, n_imax, n_itc);
     
     calcular(n_imax, n_itc);         // define imax, jmax, dx_c, etc.
-    qsub_log("after calcular: imax=%d jmax=%d", imax, jmax);
     alocar_globais(); 
-    qsub_log("after alocar_globais");
     
     dim3 gridDim((imax + blockDim.x - 1)/blockDim.x, (jmax + blockDim.y - 1)/blockDim.y);
     dim3 gridDimUm((imax+1 + blockDim.x - 1)/blockDim.x, (jmax + blockDim.y - 1)/blockDim.y);
@@ -88,9 +72,6 @@ int main(int argc, char *argv[]){
     cudaMalloc((void**)&dev_vm_n, sizeof(double)*(imax+1)*(jmax+2));
     cudaMallocManaged((void**)&dev_vm_tau, sizeof(double)*(imax+1)*(jmax+2));
     cudaMallocManaged((void**)&dev_vm_n_tau, sizeof(double)*(imax+1)*(jmax+2));
-    
-    cudaError_t err = cudaGetLastError();
-    qsub_log("after cudaMalloc group1: %d (%s)", err, cudaGetErrorString(err));
     
     double *dev_u, *dev_v, *dev_p, *dev_pn, *dev_h, *dev_t, *dev_z;
     double *dev_c, *dev_t_n_tau, *dev_t_tau, *dev_c_n_tau, *dev_c_tau; 
@@ -129,7 +110,6 @@ int main(int argc, char *argv[]){
     cudaEventCreate(&ev_solveC_start); cudaEventCreate(&ev_solveC_stop);
     cudaEventCreate(&ev_h2d_start);   cudaEventCreate(&ev_h2d_stop);
     cudaEventCreate(&ev_d2h_start);   cudaEventCreate(&ev_d2h_stop);
-    qsub_log("after cudaEventCreate group: %d (%s)", cudaGetLastError(), cudaGetErrorString(cudaGetLastError()));
 
     float time_solveU, time_solveV, time_solveP, time_solveZ, time_solveC;
     float time_h2d, time_d2h, time_timestep;
@@ -198,9 +178,6 @@ int main(int argc, char *argv[]){
     mesh();
 
     atualiza_tc<<<gridDim, blockDim>>>(dev_t, dev_c, dev_flag, temp_cylinder, concentracao_inicial, c_f, imax, jmax);
-    qsub_log("after atualiza_tc launch: %d (%s)", cudaGetLastError(), cudaGetErrorString(cudaGetLastError()));
-    cudaError_t erra = cudaDeviceSynchronize();
-    qsub_log("after atualiza_tc sync: %d (%s)", erra, cudaGetErrorString(erra));
 
     //--- Set up initial flow field ---
     if(iterations.start_mode == 0){    
@@ -349,7 +326,6 @@ int main(int argc, char *argv[]){
 
         tr = tr + 1;
     }
-    qsub_log("after physical time loop: tr=%d tempo=%f itc=%d error=%f", tr, tempo, itc, error);
     //--- End of physical calculation ---
 
     /*duration = omp_get_wtime() - duration;
@@ -363,20 +339,14 @@ int main(int argc, char *argv[]){
     !close(550)
     */
     //--- Compute the velocity of mean points ---
-    qsub_log("before comp_mean");
     comp_mean(dev_u, dev_v, dev_um, dev_vm);
-    qsub_log("after comp_mean");
-    cudaError_t sync_err = cudaDeviceSynchronize();
-    qsub_log("cudaDeviceSynchronize() returned %d (%s)", sync_err, cudaGetErrorString(sync_err));
     
     #ifdef DEBUG
     transient(dev_u, dev_v, dev_p, dev_t, dev_c, itc);
     #endif
     
     //--- output data file ---
-    qsub_log("calling output() after comp_mean");
     output(dev_um, dev_vm, dev_u, dev_v, dev_p, dev_t, dev_c, itc);
-    qsub_log("returned from output()");
 
     /*duration = omp_get_wtime() - duration;
     printf("post %lf\n", duration);

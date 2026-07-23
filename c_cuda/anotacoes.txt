@@ -1,6 +1,0 @@
-CÓDIGO qsub PARA GERAR O LOG
-
-qsub -o meu_log.txt job.sh && echo "Aguardando o cluster criar o log..." && while [ ! -f meu_log.txt ]; do sleep 2; done && tail -f meu_log.txt
-
-CÓDIGO PARA BAIXAR O RESULTADO FINAL DO OUTPUT PARA MEU COMPUTADOR:
-scp v04383@193.136.195.41:/home/v04383/ViniciusSilva/solver-cfd/c_cuda/data/output_variables.dat C:\Users\SENHOR-VINI\Downloads\

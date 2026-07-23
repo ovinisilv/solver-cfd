@@ -3,8 +3,6 @@
 #include <cub/cub.cuh>
 #include <math.h>
 
-
-
 // Functor para calcular o máximo dos valores absolutos
 struct MaxAbsOp {
     __device__ __forceinline__

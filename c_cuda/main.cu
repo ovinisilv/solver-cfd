@@ -6,7 +6,7 @@
 #include "comum.h"
 #include <math.h>
 #include <stdarg.h>
-#define N_IMAX (51*2)
+#define N_IMAX (51*3)
 #define N_ITC 800000
 #define idx i*(jmax+1)+j
 

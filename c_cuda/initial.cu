@@ -166,14 +166,23 @@ void restart_dom(double *dev_um, double *dev_vm, double *dev_p, double *dev_t, d
     double *dev_umr, *dev_vmr, *dev_pres, *dev_zr, *dev_tr, *dev_hr, *dev_h_res;
     FILE *arquivo;
     dim3 blocks, threads(16,16);
-
-    cudaMalloc((void**)&dev_umr, sizeof(double)*(rimax+2)*(rjmax+1));
+    /* BACKUP CORREÇÃO3:
+      cudaMalloc((void**)&dev_umr, sizeof(double)*(rimax+2)*(rjmax+1));
     cudaMalloc((void**)&dev_vmr, sizeof(double)*(rimax+1)*(rjmax+2));
     cudaMalloc((void**)&dev_pres, sizeof(double*)*(rimax+1)*(rjmax+1));
     cudaMalloc((void**)&dev_zr, sizeof(double)*(rimax+1)*(rjmax+1));
     cudaMalloc((void**)&dev_tr, sizeof(double)*(rimax+1)*(rjmax+1));
     cudaMalloc((void**)&dev_hr, sizeof(double)*(rimax+1)*(rjmax+1));
-    cudaMalloc((void**)&dev_h_res, sizeof(double)*(rimax+1)*(rjmax+1));
+    cudaMalloc((void**)&dev_h_res, sizeof(double)*(rimax+1)*(rjmax+1)); 
+    */
+
+    cudaMallocManaged((void**)&dev_umr, sizeof(double)*(rimax+2)*(rjmax+1));
+    cudaMallocManaged((void**)&dev_vmr, sizeof(double)*(rimax+1)*(rjmax+2));
+    cudaMallocManaged((void**)&dev_pres, sizeof(double)*(rimax+1)*(rjmax+1));
+    cudaMallocManaged((void**)&dev_zr, sizeof(double)*(rimax+1)*(rjmax+1));
+    cudaMallocManaged((void**)&dev_tr, sizeof(double)*(rimax+1)*(rjmax+1));
+    cudaMallocManaged((void**)&dev_hr, sizeof(double)*(rimax+1)*(rjmax+1));
+    cudaMallocManaged((void**)&dev_h_res, sizeof(double)*(rimax+1)*(rjmax+1));
 
     printf("RESTARTING PROGRAM\n");
 
